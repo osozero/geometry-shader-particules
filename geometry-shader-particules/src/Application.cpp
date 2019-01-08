@@ -13,7 +13,7 @@ const char *vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec2 aPos;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, 0, 1.0);\n"
+"   gl_Position = vec4(aPos.x, aPos.y,0.0, 1.0);\n"
 "}\0";
 const char *fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
@@ -21,8 +21,6 @@ const char *fragmentShaderSource = "#version 330 core\n"
 "{\n"
 "   FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
 "}\n\0";
-
-
 
 
 int main()
@@ -48,10 +46,21 @@ int main()
 	glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
 	glCompileShader(vertexShader);
 
-	int fragmentShader;
+	int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
+	glCompileShader(fragmentShader);
+
+	int shaderProgram = glCreateProgram();
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
+
+
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
 
 	float vertices[] = { -0.5f,0.5f,
-					  0.5f,0.5f };
+						  0.5f,0.5f };
 
 	unsigned int vbo, vao;
 
@@ -62,25 +71,25 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 2 * sizeof(float), GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribPointer(0, 2 , GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	
 
-	while(true)
+	while(!glfwWindowShouldClose(window))
 	{
-		if (!glfwWindowShouldClose(window))
-		{
-
 			glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+
 			glViewport(0, 0, WIDTH, HEIGHT);
 
-			//glDrawArrays(GL_LINE, 0, 2);
+			glUseProgram(shaderProgram);
+			glBindVertexArray(vao);
+
+			glDrawArrays(GL_LINE, 0, 2);
 
 			glfwSwapBuffers(window);
 			glfwPollEvents();
-		}
 	}
 	
 
@@ -88,3 +97,5 @@ int main()
 
 	return 0;
 }
+
+
