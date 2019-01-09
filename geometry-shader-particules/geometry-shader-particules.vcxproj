@@ -144,6 +144,11 @@
   <ItemGroup>
     <ClCompile Include="src\Application.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\particules.fs" />
+    <None Include="shader\particules.gs" />
+    <None Include="shader\particules.vs" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

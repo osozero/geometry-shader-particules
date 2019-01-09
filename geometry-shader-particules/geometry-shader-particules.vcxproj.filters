@@ -19,4 +19,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\particules.vs" />
+    <None Include="shader\particules.fs" />
+    <None Include="shader\particules.gs" />
+  </ItemGroup>
 </Project>
