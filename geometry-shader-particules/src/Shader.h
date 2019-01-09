@@ -1,0 +1,18 @@
+#pragma once
+#include <sstream>
+#include <glm/matrix.hpp>
+
+class shader
+{
+public:
+	shader(const char* vertexSourcePath,const char* fragmentSourcePath, const char* geometrySourcePath=nullptr);
+	void use();
+	void setUniform4m(const char* name, glm::mat4 m);
+	void setUniform3v(const char* name, glm::vec3 v);
+	~shader(){};
+private:
+	unsigned int id;
+
+	std::string readFile(const char *filePath);
+};
+

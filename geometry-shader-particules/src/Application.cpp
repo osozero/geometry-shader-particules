@@ -3,50 +3,32 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include "glm/vec3.hpp"
-#include "glm/matrix.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <ostream>
 #include <iostream>
+#include "Shader.h"
 
 const unsigned int WIDTH = 1800;
 const unsigned int HEIGHT = 1200;
 
-const char *vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"layout (location = 1) in vec3 col;\n"
-"out vec3 color;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos.x, aPos.y,aPos.z, 1.0);\n"
-"   color=col;\n"
-"}\0";
 
-const char *fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"in vec3 color;\n"
-"void main()\n"
-"{\n"
-"   FragColor = vec4(color, 1.0f);\n"
-"}\n\0";
+glm::vec3 camera(0.0, 1.0, -0.3);
+glm::vec3 cameraFront(0, 0, -1);
+glm::vec3 up(0, 1.0, 0.0);
+
+bool firstMouse = true;
+float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+float pitch = 0.0f;
+float lastX = 800.0f / 2.0;
+float lastY = 600.0 / 2.0;
+float fov = 45.0f;
 
 
-const char *geometryShaderSource = "#version 330 core\n"
-"layout (triangles) in;\n"
-"layout (line_strip,max_vertices =5) out;\n"
-"uniform vec3 normal;\n"
-"out vec3 color;\n"
-"void main()\n"
-"{\n"
-"   gl_Position= gl_in[0].gl_Position + vec4(0.1,0,0,0);\n"
-"   EmitVertex();\n"
-"   gl_Position= gl_in[0].gl_Position + vec4(0.0,-0.4,0,0);\n"
-"   EmitVertex();\n"
-
-"   color=vec3(1,0,0);\n"
-
-"   EndPrimitive();\n"
-"}\n\0";
-
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void processInput(GLFWwindow* window);
 
 int main()
 {
@@ -63,87 +45,31 @@ int main()
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
 
 	glewInit();
 
-
-	int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-	glCompileShader(vertexShader);
-
-	int success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	int geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
-	glShaderSource(geometryShader, 1, &geometryShaderSource, nullptr);
-	glCompileShader(geometryShader);
-
-	glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(geometryShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::GEOMETRY::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	int shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	//glAttachShader(shaderProgram, geometryShader);
-	glAttachShader(shaderProgram, fragmentShader);
-
-	glLinkProgram(shaderProgram);
-
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-	}
-
-
-	int normalDisplayerShaderProgram = glCreateProgram();
-	glAttachShader(normalDisplayerShaderProgram, vertexShader);
-	glAttachShader(normalDisplayerShaderProgram, geometryShader);
-	glAttachShader(normalDisplayerShaderProgram, fragmentShader);
-
-	glLinkProgram(normalDisplayerShaderProgram);
-
-	glGetProgramiv(normalDisplayerShaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(normalDisplayerShaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-	}
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	shader appShader("shader/particules.vs", "shader/particules.fs");
+	shader normalDisplayerShader("shader/particules.vs", "shader/particules.fs", "shader/particules.gs");
 
 	float vertices[] = {
-		-0.5f,  0.5f, 1.0f, 0.0f, 1.0f,0.0f, // top-left
-		 0.5f,  0.5f, 0.0f, 0.0f, 1.0f,0.0f, // top-right
-		 0.5f, -0.5f, 0.0f, 0.0f, 1.0f,0.0f, // bottom-right
-		-0.5f, -0.5f, 1.0f, 0.0f, 1.0f,0.0f  // bottom-left
+		-0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 0.0f, // top-left
+		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-right
+		-0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 0.0f // bottom-left
 	};
 
+	glm::mat4 view(1);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 
-	glm::vec3 normal(glm::cross(glm::vec3(0.0, 0.5, 0.0) - glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.5f, -0.5f, 0.0f) - glm::vec3(-0.5f, -0.5f, 0.0f)));
+	glm::vec3 normal(glm::cross(glm::vec3(0.0, 0.5, 0.0) - glm::vec3(-0.5f, -0.5f, 0.0f),
+	                            glm::vec3(0.5f, -0.5f, 0.0f) - glm::vec3(-0.5f, -0.5f, 0.0f)));
+
 
 	normal = glm::normalize(normal);
 
+	glm::mat4 model(1);
+	model = glm::translate(model, glm::vec3(0, 0, -10));
 	unsigned int vbo, vao;
 
 	glGenVertexArrays(1, &vao);
@@ -156,32 +82,49 @@ int main()
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-	
-	while(!glfwWindowShouldClose(window))
+
+	appShader.use();
+
+
+	while (!glfwWindowShouldClose(window))
 	{
-			glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-			glLineWidth(1.0f);
-			glUseProgram(shaderProgram);
-			glBindVertexArray(vao);
+		processInput(window);
+		view = glm::lookAt(camera, camera+cameraFront, up);
 
-			glDrawArrays(GL_TRIANGLES, 0, 3);
+		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glLineWidth(1.0f);
 
-			glUseProgram(normalDisplayerShaderProgram);
+		appShader.use();
+		appShader.setUniform4m("projection", projection);
+		appShader.setUniform4m("model", model);
+		appShader.setUniform4m("view", view);
+		appShader.setUniform3v("normal", normal);
 
-			glUniform3f(glGetUniformLocation(normalDisplayerShaderProgram, "normal"), normal.x, normal.y, normal.z);
+		glBindVertexArray(vao);
 
-			glLineWidth(5.0f);
-			glDrawArrays(GL_TRIANGLES, 0, 3);
 
-			glfwSwapBuffers(window);
-			glfwPollEvents();
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
+		normalDisplayerShader.use();
+		normalDisplayerShader.setUniform4m("projection", projection);
+		normalDisplayerShader.setUniform4m("model", model);
+		normalDisplayerShader.setUniform4m("view", view);
+		normalDisplayerShader.setUniform3v("normal", normal);
+		
+		
+		glLineWidth(25.0f);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		glfwSwapBuffers(window);
+		glfwPollEvents();
 	}
 
 
@@ -196,7 +139,68 @@ int main()
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	// make sure the viewport matches the new window dimensions; note that width and 
-	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
+}
+
+
+void processInput(GLFWwindow *window)
+{
+	float cameraSpeed = 0.005f;
+
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		camera += cameraSpeed * cameraFront;
+	}
+	
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		camera -= cameraSpeed * cameraFront;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		camera -= glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		camera += glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
+	}
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouse)
+	{
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
+	}
+
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+	lastX = xpos;
+	lastY = ypos;
+
+	float sensitivity = 0.1f; // change this value to your liking
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+
+	yaw += xoffset;
+	pitch += yoffset;
+
+	// make sure that when pitch is out of bounds, screen doesn't get flipped
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+
+	glm::vec3 front;
+	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	front.y = sin(glm::radians(pitch));
+	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	cameraFront = glm::normalize(front);
 }
