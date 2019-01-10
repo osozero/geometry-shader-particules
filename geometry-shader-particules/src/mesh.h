@@ -3,6 +3,7 @@
 #include <glm/vec2.hpp>
 #include <string>
 #include <vector>
+#include "Shader.h"
 
 class shader;
 
@@ -32,14 +33,7 @@ public:
 	unsigned int VAO;
 
 
-	mesh(std::vector<Vertex> vertices,std::vector<unsigned int> indices, std::vector<Texture> textures)
-	{
-		this->vertices = vertices;
-		this->indices = indices;
-		this->textures = textures;
-
-		setupMesh();
-	}
+	mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
 
 	void draw(shader shader);
 	~mesh();
