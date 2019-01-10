@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+class shader;
+
 struct Vertex
 {
 	glm::vec3 Position;
@@ -30,7 +32,21 @@ public:
 	unsigned int VAO;
 
 
-	mesh();
+	mesh(std::vector<Vertex> vertices,std::vector<unsigned int> indices, std::vector<Texture> textures)
+	{
+		this->vertices = vertices;
+		this->indices = indices;
+		this->textures = textures;
+
+		setupMesh();
+	}
+
+	void draw(shader shader);
 	~mesh();
+
+private:
+	unsigned int VBO, EBO;
+
+	void setupMesh();
 };
 
