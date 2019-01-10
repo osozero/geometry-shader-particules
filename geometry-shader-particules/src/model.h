@@ -18,11 +18,7 @@ public:
 	std::string directory;
 	bool gammaCorrection;
 
-	model(std::string const &path,bool gamma=false)
-		:gammaCorrection(gamma)
-	{
-		loadModel(path);
-	}
+	model(std::string const& path, bool gamma = false);
 
 	void draw(shader shdr);
 	~model();
