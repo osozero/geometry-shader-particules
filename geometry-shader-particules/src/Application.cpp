@@ -9,20 +9,21 @@
 #include <ostream>
 #include <iostream>
 #include "Shader.h"
+#include "model.h"
 
 const unsigned int WIDTH = 1800;
 const unsigned int HEIGHT = 1200;
 
 
-glm::vec3 camera(0.0, 1.0, -0.3);
+glm::vec3 camera(0.0f, 0.0f, 15.0f);
 glm::vec3 cameraFront(0, 0, -1);
 glm::vec3 up(0, 1.0, 0.0);
 
 bool firstMouse = true;
 float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
 float pitch = 0.0f;
-float lastX = 800.0f / 2.0;
-float lastY = 600.0 / 2.0;
+float lastX = WIDTH / 2.0;
+float lastY = HEIGHT / 2.0;
 float fov = 45.0f;
 
 
@@ -50,86 +51,39 @@ int main()
 
 	glewInit();
 
+	glEnable(GL_DEPTH_TEST);
+
 	shader appShader("shader/particules.vs", "shader/particules.fs");
-	shader normalDisplayerShader("shader/particules.vs", "shader/particules.fs", "shader/particules.gs");
+	
 
-	float vertices[] = {
-		-0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 0.0f, // top-left
-		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-right
-		-0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 0.0f // bottom-left
-	};
-
-	glm::mat4 view(1);
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
-
-	glm::vec3 normal(glm::cross(glm::vec3(0.0, 0.5, 0.0) - glm::vec3(-0.5f, -0.5f, 0.0f),
-	                            glm::vec3(0.5f, -0.5f, 0.0f) - glm::vec3(-0.5f, -0.5f, 0.0f)));
-
-
-	normal = glm::normalize(normal);
-
-	glm::mat4 model(1);
-	model = glm::translate(model, glm::vec3(0, 0, -10));
-	unsigned int vbo, vao;
-
-	glGenVertexArrays(1, &vao);
-
-	glGenBuffers(1, &vbo);
-
-
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	appShader.use();
-
+	model myModel("resource/model/skull/12140_Skull_v3_L2.obj");
 
 	while (!glfwWindowShouldClose(window))
 	{
 		processInput(window);
-		view = glm::lookAt(camera, camera+cameraFront, up);
 
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glLineWidth(1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH/ (float)HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = glm::lookAt(camera,camera+cameraFront,up);
+		appShader.setUniform4m("projection", projection);
+		appShader.setUniform4m("view", view);
+
+		// render the loaded model
+		glm::mat4 model(1.0f);
+		model = glm::rotate(model, glm::radians(-70.0f),glm::vec3(1.0,0.0,0.0));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));	// it's a bit too big for our scene, so scale it down
 
 		appShader.use();
-		appShader.setUniform4m("projection", projection);
 		appShader.setUniform4m("model", model);
-		appShader.setUniform4m("view", view);
-		appShader.setUniform3v("normal", normal);
 
-		glBindVertexArray(vao);
-
-
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-
-		normalDisplayerShader.use();
-		normalDisplayerShader.setUniform4m("projection", projection);
-		normalDisplayerShader.setUniform4m("model", model);
-		normalDisplayerShader.setUniform4m("view", view);
-		normalDisplayerShader.setUniform3v("normal", normal);
-		
-		
-		glLineWidth(25.0f);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		myModel.draw(appShader);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-
-
-	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo);
 
 	glfwTerminate();
 
