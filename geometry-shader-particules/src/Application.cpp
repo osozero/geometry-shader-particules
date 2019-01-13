@@ -11,11 +11,11 @@
 #include "Shader.h"
 #include "model.h"
 
-const unsigned int WIDTH = 1800;
-const unsigned int HEIGHT = 1200;
+const unsigned int WIDTH = 1200;
+const unsigned int HEIGHT = 800;
 
 
-glm::vec3 camera(0.0f, 0.0f, 15.0f);
+glm::vec3 camera(0.0f, 0.0f, 5.0f);
 glm::vec3 cameraFront(0, 0, -1);
 glm::vec3 up(0, 1.0, 0.0);
 
@@ -53,7 +53,7 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
-	shader appShader("shader/particules.vs", "shader/particules.fs");
+	shader appShader("shader/particules.vs", "shader/particules.fs", "shader/particules.gs");
 	
 
 	model myModel("resource/model/skull/12140_Skull_v3_L2.obj");
@@ -74,9 +74,12 @@ int main()
 		glm::mat4 model(1.0f);
 		model = glm::rotate(model, glm::radians(-70.0f),glm::vec3(1.0,0.0,0.0));
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));	// it's a bit too big for our scene, so scale it down
+		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));	// it's a bit too big for our scene, so scale it down
 
 		appShader.use();
+
+		appShader.setFloat("time", glfwGetTime());
+
 		appShader.setUniform4m("model", model);
 
 		myModel.draw(appShader);

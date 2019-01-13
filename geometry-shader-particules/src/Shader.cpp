@@ -113,6 +113,11 @@ void shader::setUniform3v(const char* name, glm::vec3 v)
 	glUniform3f(glGetUniformLocation(id, name), v.x, v.y, v.z);
 }
 
+void shader::setFloat(const char* name, float f)
+{
+	glUniform1f(glGetUniformLocation(id, name), f);
+}
+
 std::string shader::readFile(const char* filePath)
 {
 

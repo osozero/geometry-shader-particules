@@ -9,6 +9,7 @@ public:
 	void use();
 	void setUniform4m(const char* name, glm::mat4 m);
 	void setUniform3v(const char* name, glm::vec3 v);
+	void setFloat(const char* name, float f);
 	unsigned int getId() const
 	{
 		return this->id;
